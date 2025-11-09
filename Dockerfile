@@ -49,7 +49,7 @@ RUN mkdir -p /home/$USERNAME/workspace
 COPY --chown=$USERNAME:$USERNAME . /home/$USERNAME/workspace
 
 # Set environment variable for VS Code Tunnel name
-ENV TUNNEL_NAME=balls
+ENV TUNNEL_NAME=Codespaces: super balls
 
 # Default entrypoint: run VS Code Tunnel
 ENTRYPOINT ["code", "tunnel", "--name", "${TUNNEL_NAME}", "--accept-server-license-terms"]

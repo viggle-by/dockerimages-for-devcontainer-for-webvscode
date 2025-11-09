@@ -2,7 +2,6 @@
 ARG VARIANT="noble"
 FROM buildpack-deps:${VARIANT}-curl
 
-# Repeat the ARG after FROM to reuse it later
 ARG VARIANT
 
 # Conditionally remove the 'ubuntu' user if using noble variant
@@ -15,20 +14,22 @@ RUN if [ "$VARIANT" = "noble" ]; then \
         fi; \
     fi
 
-# Install dependencies needed for VS Code CLI (tunnel)
+# Install prerequisites
 RUN apt-get update && apt-get install -y \
     curl \
     ca-certificates \
+    gnupg \
     sudo \
+    apt-transport-https \
     && rm -rf /var/lib/apt/lists/*
 
-# Download and install VS Code CLI (for VS Code Tunnel)
-RUN curl -fsSL https://code.visualstudio.com/sha/download?build=stable&os=cli-alpine-x64 \
-    -o vscode_cli.tar.gz && \
-    mkdir -p /usr/local/vscode-cli && \
-    tar -xzf vscode_cli.tar.gz -C /usr/local/vscode-cli --strip-components=1 && \
-    rm vscode_cli.tar.gz && \
-    ln -s /usr/local/vscode-cli/bin/code /usr/local/bin/code
+# Add Microsoft GPG key and repository for VS Code
+RUN curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg && \
+    sudo install -o root -g root -m 644 packages.microsoft.gpg /etc/apt/keyrings/ && \
+    sudo sh -c 'echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list' && \
+    sudo apt install -y apt-transport-https && \
+    sudo apt update && sudo apt install -y code && \
+    rm -f packages.microsoft.gpg
 
 # Create a non-root user named 'mysticgiggle'
 ARG USERNAME=mysticgiggle
@@ -49,7 +50,7 @@ RUN mkdir -p /home/$USERNAME/workspace
 COPY --chown=$USERNAME:$USERNAME . /home/$USERNAME/workspace
 
 # Set environment variable for VS Code Tunnel name
-ENV TUNNEL_NAME=super_balls
+ENV TUNNEL_NAME=devcontainer
 
 # Default entrypoint: run VS Code Tunnel
 ENTRYPOINT ["code", "tunnel", "--name", "${TUNNEL_NAME}", "--accept-server-license-terms"]
